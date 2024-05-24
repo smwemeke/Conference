@@ -1,5 +1,6 @@
 package com.pluralsight.conference;
 
+import com.pluralsight.conference.service.ConferenceUserDetailsContextMapper;
 import jakarta.servlet.DispatcherType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +28,8 @@ import org.springframework.security.ldap.userdetails.LdapAuthoritiesPopulator;
 import org.springframework.security.ldap.userdetails.PersonContextMapper;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
+import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -38,9 +41,12 @@ import javax.sql.DataSource;
 @EnableWebSecurity
 public class ConferenceSecurityConfig {
     private DataSource dataSource;
+
+    private ConferenceUserDetailsContextMapper ctxMapper;
     @Autowired
     public  ConferenceSecurityConfig(DataSource dataSource){
         this.dataSource = dataSource;
+        this.ctxMapper = ctxMapper;
 
     }
     @Bean
@@ -60,8 +66,28 @@ public class ConferenceSecurityConfig {
                         .failureUrl("/login?error=true")
                         .permitAll()
                         .defaultSuccessUrl("/", true)
+
+                )
+                .rememberMe(checkbox -> checkbox
+                        .key("superSecretKey")
+                        .tokenRepository(tokenRepository())
+                )
+                .logout(logout -> logout
+                        .logoutSuccessUrl("/login?logout=true")
+                        .logoutRequestMatcher(new AntPathRequestMatcher("/perform_logout", "GET"))
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JESSIONID")
+                        .permitAll()
+
                 );
+
         return http.build();
+    }
+    @Bean
+    public PersistentTokenRepository tokenRepository() {
+        JdbcTokenRepositoryImpl token = new JdbcTokenRepositoryImpl();
+        token.setDataSource(dataSource);
+        return token;
     }
 
     /*Configures using InMemory Authentication*/
@@ -86,7 +112,9 @@ public class ConferenceSecurityConfig {
                    .and()
                 .passwordCompare()
                    .passwordEncoder(new BCryptPasswordEncoder())
-                   .passwordAttribute("userPassword");
+                   .passwordAttribute("userPassword")
+                .and()
+                .userDetailsContextMapper(ctxMapper);
     }
 
 }
