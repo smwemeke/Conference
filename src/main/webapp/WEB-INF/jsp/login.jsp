@@ -46,12 +46,22 @@
         <h1>Login</h1>
     </div>
 
-    <div> <c:if test="${not empty param.error}" >Invalid Username and Password.</c:if></div>
+    <div class="error"> <c:if test="${not empty param.error}" >Invalid Username and Password.</c:if></div>
+
+    <c:if test="${not empty param.logout}" >
+        <div class="alert alert-success" role="alert">
+            Logout was successful!
+
+        </div>
+    </c:if>
 
         <form:form action="perform_login" method="post">
             <form:errors path="/" cssClass="errorblock" element="div" />
             <div><label>UserName: <input type="text" name="username"/> </label></div>
             <div><label>Password: <input type="password" name="password"/> </label></div>
+            <div>
+                <label>Remember Me: <input type="checkbox" name= "remember-me"/></label>
+            </div>
             <input type="submit" class="btn btn-lg btn-primary" role="button" value="Login"/>
         </form:form>
 
